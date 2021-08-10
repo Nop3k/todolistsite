@@ -1,0 +1,67 @@
+{% extends "main/base.html" %}
+
+{% block title %}
+View
+{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.action-list-group {
+  position: relative;
+}
+
+.action-list-group .list-group-item {
+  padding: 0;
+}
+
+.action-list-group .list-group-item > a.list-group-link {
+    display: block;
+    padding : 10px 15px;
+    color: #555;
+}
+
+.action-list-group .list-group-item > a.list-group-link:hover {
+  background: #f5f5f5;
+  text-decoration: none;
+}
+
+.action-list-group .btn{
+position: absolute;
+right: 5px;
+margin-top: 5px;
+top: 0;
+}
+
+</style>
+<h3>View Lists</h3>
+<ul class="list-group action-list-group">
+
+    {% for list, status in context_dict.items %}
+    <li class="list-group-item">
+
+        <a href="/{{list.id}}"
+           class="list-group-link list-group-item-dark d-flex">
+            <div class="col">
+                {{list}}
+            </div>
+
+            <div class="col">
+                {{status}}
+            </div>
+
+
+        </a>
+        <form method="post" action="/view/">
+            {% csrf_token %}
+            <button class="btn btn-danger btn-sm"
+                    style="float: right;" name="id_to_delete"
+                    value="{{list.id}}"
+                    type="submit">Delete
+            </button>
+        </form>
+    </li>
+
+    {% endfor %}
+
+</ul>
+{% endblock %}

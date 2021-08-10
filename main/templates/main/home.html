@@ -1,0 +1,12 @@
+{% extends 'main/base.html' %}
+{% block title %}
+Home
+{% endblock %}
+{% block content %}
+<h3>Home Page</h3>
+{% if user.is_authenticated %}
+Welcome <b>{{user}}</b>. <br>
+You have currently <i>{{list_count}} lists</i>!<br>
+There are in total <i>{{item_count}} items</i> on your lists!
+{% endif %}
+{% endblock %}
