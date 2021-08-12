@@ -1,78 +1,90 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
+from django.db.models import Count, Sum
 from .models import ToDoList
 from .forms import CreateNewList
 
 
 # Create your views here.
 
-def index(response, id):
-    ls = ToDoList.objects.get(id=id)
+def index(request, id):
+    ls = get_object_or_404(ToDoList, id=id)
 
-    if ls in response.user.todolist.all():
-        if response.method == "POST":
+    if ls in request.user.todolist.all():
+        if request.method == "POST":
 
-            if response.POST.get("save"):
+            if request.POST.get("save"):
                 for item in ls.item_set.all():
-                    if response.POST.get("c" + str(item.id)):
+                    if request.POST.get("c" + str(item.id)):
                         item.complete = True
                     else:
                         item.complete = False
 
                     item.save()
 
-            elif response.POST.get("newItem"):
-                txt = response.POST.get("new")
+            elif request.POST.get("newItem"):
+                txt = request.POST.get("new")
 
                 if len(txt) > 2:
                     ls.item_set.create(text=txt, complete=False)
                 else:
                     print("Invalid input")
-        return render(response, "main/list.html", {"ls": ls})
+        return render(request, "main/list.html", {"ls": ls})
     else:
-        return render(response, "main/view.html", {})
+        return render(request, "main/view.html", {})
 
 
-def home(response):
-    item_count = 0
-    if response.user.is_authenticated:
-        list_count = len(response.user.todolist.all())
-        for list in response.user.todolist.all():
-            for item in list.item_set.all():
-                item_count += 1
-        print(item_count)
-    else:
-        list_count = 0
-    return render(response, "main/home.html",
-                  {"list_count": list_count, "item_count": item_count})
+def home(request):
+    # item_count = 0
+    # if request.user.is_authenticated:
+    #     list_count = len(request.user.todolist.all())
+    #     for list in request.user.todolist.all():
+    #         for item in list.item_set.all():
+    #             item_count += 1
+    #     print(item_count)
+    # else:
+    #     list_count = 0
+    if not request.user.is_authenticated:
+        data = {'list_count': 0, 'item_count': 0}
+        return render(request, "main/home.html", data)
+    print(request.user)
+    data = (
+        request.user.todolist
+            .annotate(items=Count('item'))
+            .aggregate(
+            list_count=Count('pk'),
+            item_count=Sum('items')
+        )
+    )
+    return render(request, "main/home.html", data)
 
 
-def create(response):
-    if response.method == "POST":
-        form = CreateNewList(response.POST)
+def create(request):
+    if request.method == "POST":
+        form = CreateNewList(request.POST)
 
         if form.is_valid():
             name = form.cleaned_data['name']
             to_do_list = ToDoList(name=name)
             to_do_list.save()
-            response.user.todolist.add(to_do_list)
+            request.user.todolist.add(to_do_list)
 
         return HttpResponseRedirect("/%i" % to_do_list.id)
     else:
         form = CreateNewList()
 
-    return render(response, "main/create.html", {"form": form})
+    return render(request, "main/create.html", {"form": form})
 
 
-def view(response):
+def view(request):
     context_dict = {}
-    if response.user.is_authenticated:
-        if response.method == "POST":
-            if response.POST.get('id_to_delete'):
+    if request.user.is_authenticated:
+        if request.method == "POST":
+            if request.POST.get('id_to_delete'):
                 ToDoList.objects.get(
-                    id=response.POST.get('id_to_delete')).delete()
+                    id=request.POST.get('id_to_delete')).delete()
 
-        for list in response.user.todolist.all():
+        for list in request.user.todolist.all():
             done = 0
             total = 0
             for item in list.item_set.all():
@@ -81,4 +93,4 @@ def view(response):
                     done += 1
             context_dict[list] = str(done) + '/' + str(total)
 
-    return render(response, "main/view.html", {"context_dict": context_dict})
+    return render(request, "main/view.html", {"context_dict": context_dict})
