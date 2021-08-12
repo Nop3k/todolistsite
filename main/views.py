@@ -35,19 +35,9 @@ def index(request, id):
 
 
 def home(request):
-    # item_count = 0
-    # if request.user.is_authenticated:
-    #     list_count = len(request.user.todolist.all())
-    #     for list in request.user.todolist.all():
-    #         for item in list.item_set.all():
-    #             item_count += 1
-    #     print(item_count)
-    # else:
-    #     list_count = 0
     if not request.user.is_authenticated:
         data = {'list_count': 0, 'item_count': 0}
         return render(request, "main/home.html", data)
-    print(request.user)
     data = (
         request.user.todolist
             .annotate(items=Count('item'))
